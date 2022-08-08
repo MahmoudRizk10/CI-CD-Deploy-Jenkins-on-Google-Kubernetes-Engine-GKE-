@@ -1,0 +1,43 @@
+pipeline {
+    agent {label 'myslave'}
+
+    stages {
+        stage('git checkout') {
+            steps {
+                git 'https://github.com/mahmoud254/jenkins_nodejs_example.git'
+            }
+        }
+        
+        stage('build') {
+            steps {
+                sh 'docker build -f dockerfile . -t mahmoudrizk10/nodejsapp:latest'
+            }
+        }
+        
+        stage('artifact') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'pass', usernameVariable: 'username')]){
+                sh 'docker login -u ${username} -p ${pass}'
+                sh 'docker push mahmoudrizk10/nodejsapp:latest'
+                
+                }
+            }
+        }
+        
+        stage('git app') {
+            steps {
+                git 'https://github.com/MahmoudRizk10/Final-Project.git'
+            }
+        }
+        
+        stage('deploy') {
+            steps 
+            {
+                //sh 'kubectl create namespace app-namespace'
+                sh 'kubectl apply -f ./K8S/app.yaml -n app-namespace'
+                sh 'kubectl apply -f ./K8S/service.yaml -n app-namespace'
+                
+            }
+        }
+    }
+}
